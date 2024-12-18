@@ -1,0 +1,5 @@
+# Exclude files and directories
+.idea/
+.vscode/
+*.log
+node_modules/

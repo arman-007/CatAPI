@@ -1,0 +1,10 @@
+#### To build the docker image:
+docker build -t beego-dev .
+
+
+#### Run the container:
+docker run -p 8080:8080 -v $(pwd):/app beego-dev
+
+
+CATAPI key:
+live_GQGS0iyuOQPXMeMpC7aTQle8rd1Go6WB3rmtDNBNxSg3xeK1INujU9tRhtZdH8v3
