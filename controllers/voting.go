@@ -1,128 +1,111 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	// "bytes"
 
-	"github.com/beego/beego/v2/server/web"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 type VotingController struct {
-	web.Controller
+	beego.Controller
 }
 
-func (c *VotingController) Get() {
-	// Prepare the request
-	fmt.Println("voting api called")
-	url := "https://api.thecatapi.com/v1/images/search?limit=1"
-	req, err := http.NewRequest("GET", url, nil)
+// Fetch a random cat image for voting
+func (c *VotingController) GetCat() {
+	req, err := http.NewRequest("GET", "https://api.thecatapi.com/v1/images/search", nil)
 	if err != nil {
 		c.Ctx.Output.SetStatus(500)
-		c.Data["error"] = "Failed to create request: " + err.Error()
-		c.TplName = "error.tpl"
+		c.Data["json"] = map[string]string{"error": "Failed to create request"}
+		c.ServeJSON()
 		return
 	}
-
-	// Add headers
 	req.Header.Set("x-api-key", "live_GQGS0iyuOQPXMeMpC7aTQle8rd1Go6WB3rmtDNBNxSg3xeK1INujU9tRhtZdH8v3")
 
-	// Make the HTTP call
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		c.Ctx.Output.SetStatus(500)
-		c.Data["error"] = "Failed to fetch data: " + err.Error()
-		c.TplName = "error.tpl"
+		c.Data["json"] = map[string]string{"error": "Failed to fetch data"}
+		c.ServeJSON()
 		return
 	}
 	defer resp.Body.Close()
 
-	// Read and parse the response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		c.Ctx.Output.SetStatus(500)
-		c.Data["error"] = "Failed to read response body: " + err.Error()
-		c.TplName = "error.tpl"
+		c.Data["json"] = map[string]string{"error": "Failed to read response"}
+		c.ServeJSON()
 		return
 	}
 
-	var result []map[string]interface{}
-	if err := json.Unmarshal(body, &result); err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Data["error"] = "Failed to parse JSON: " + err.Error()
-		c.TplName = "error.tpl"
-		return
-	}
-
-	// Pass the data to the template
-	// fmt.Println(result)
-	c.Data["Votes"] = result
-	c.TplName = "voting.tpl"
+	c.Ctx.Output.SetStatus(200)
+	c.Ctx.Output.Body(body)
 }
 
-// func (c *VotingController) Vote() {
-// 	var payload struct {
-// 		ImageID string `json:"image_id"`
-// 		SubID   string `json:"sub_id"`
-// 		Value   bool   `json:"value"` // Use bool for true/false
-// 	}
+// Submit a vote
+func (c *VotingController) SubmitVote() {
+	body, err := io.ReadAll(c.Ctx.Request.Body)
+	if err != nil {
+		c.Ctx.Output.SetStatus(500)
+		fmt.Println("ERROR: Failed to read request body:", err)
+		c.Data["json"] = map[string]string{"error": "Failed to read request body"}
+		c.ServeJSON()
+		return
+	}
+	fmt.Println("RAW REQUEST BODY:", string(body))
 
-// 	// Parse the incoming JSON payload
-// 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &payload); err != nil {
-// 		c.Ctx.Output.SetStatus(400)
-// 		c.Data["json"] = map[string]string{"error": "Invalid payload"}
-// 		c.ServeJSON()
-// 		return
-// 	}
+	var payload map[string]interface{}
+	if err := json.Unmarshal(body, &payload); err != nil {
+        c.Ctx.Output.SetStatus(400)
+        fmt.Println("ERROR: Failed to parse JSON:", err)
+        c.Data["json"] = map[string]string{"error": "Invalid payload"}
+        c.ServeJSON()
+        return
+    }
+	c.Data["json"] = map[string]string{"message": "Payload received successfully"}
+    c.ServeJSON()
 
-// 	// Validate payload
-// 	if payload.ImageID == "" {
-// 		c.Ctx.Output.SetStatus(400)
-// 		c.Data["json"] = map[string]string{"error": "Invalid payload values"}
-// 		c.ServeJSON()
-// 		return
-// 	}
+	reqBody, err := json.Marshal(payload)
+	if err != nil {
+		c.Ctx.Output.SetStatus(500)
+		c.Data["json"] = map[string]string{"error": "Failed to marshal payload"}
+		c.ServeJSON()
+		return
+	}
 
-// 	// Forward the payload to The Cat API
-// 	reqBody, err := json.Marshal(payload)
-// 	if err != nil {
-// 		c.Ctx.Output.SetStatus(500)
-// 		c.Data["json"] = map[string]string{"error": "Failed to marshal payload"}
-// 		c.ServeJSON()
-// 		return
-// 	}
+	req, err := http.NewRequest("POST", "https://api.thecatapi.com/v1/votes", bytes.NewReader(reqBody))
+	if err != nil {
+		c.Ctx.Output.SetStatus(500)
+		c.Data["json"] = map[string]string{"error": "Failed to create request"}
+		c.ServeJSON()
+		return
+	}
+	req.Header.Set("x-api-key", "DEMO-API-KEY")
+	req.Header.Set("Content-Type", "application/json")
 
-// 	req, err := http.NewRequest("POST", "https://api.thecatapi.com/v1/votes", bytes.NewReader(reqBody))
-// 	if err != nil {
-// 		c.Ctx.Output.SetStatus(500)
-// 		c.Data["json"] = map[string]string{"error": "Failed to create request"}
-// 		c.ServeJSON()
-// 		return
-// 	}
-// 	// req.Header.Set("Content-Type", "application/json")
-// 	req.Header.Set("x-api-key", "live_GQGS0iyuOQPXMeMpC7aTQle8rd1Go6WB3rmtDNBNxSg3xeK1INujU9tRhtZdH8v3")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		c.Ctx.Output.SetStatus(500)
+		c.Data["json"] = map[string]string{"error": "Failed to send vote"}
+		c.ServeJSON()
+		return
+	}
+	defer resp.Body.Close()
 
-// 	client := &http.Client{}
-// 	resp, err := client.Do(req)
-// 	if err != nil {
-// 		c.Ctx.Output.SetStatus(500)
-// 		c.Data["json"] = map[string]string{"error": "Failed to send vote"}
-// 		c.ServeJSON()
-// 		return
-// 	}
-// 	defer resp.Body.Close()
+	// body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.Ctx.Output.SetStatus(500)
+		c.Data["json"] = map[string]string{"error": "Failed to read response"}
+		c.ServeJSON()
+		return
+	}
 
-// 	body, err := io.ReadAll(resp.Body)
-// 	if err != nil {
-// 		c.Ctx.Output.SetStatus(500)
-// 		c.Data["json"] = map[string]string{"error": "Failed to read response"}
-// 		c.ServeJSON()
-// 		return
-// 	}
-
-// 	c.Ctx.Output.SetStatus(resp.StatusCode)
-// 	c.Ctx.Output.Body(body)
-// }
+	c.Ctx.Output.SetStatus(resp.StatusCode)
+	c.Ctx.Output.Body(body)
+}

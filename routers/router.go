@@ -6,9 +6,14 @@ import (
 )
 
 func init() {
-    beego.Router("/", &controllers.MainController{})
-    beego.Router("/voting", &controllers.VotingController{})
-	// beego.Router("/api/vote", &controllers.VotingController{}, "post:Vote")
-    beego.Router("/breeds", &controllers.BreedsController{}, "get:GetBreeds")
-	beego.Router("/favs", &controllers.FavoritesController{}, "get:GetFavorites")
+	beego.Router("/", &controllers.MainController{}, "get:Index")
+
+    beego.Router("/api/voting/cat", &controllers.VotingController{}, "get:GetCat")
+	beego.Router("/api/voting/vote", &controllers.VotingController{}, "post:SubmitVote")
+
+    beego.Router("/api/breeds", &controllers.BreedsController{}, "get:GetBreeds")
+	beego.Router("/api/breeds/images", &controllers.BreedsController{}, "get:GetBreedImages")
+
+	beego.Router("/api/favorites", &controllers.FavoritesController{}, "post:AddFavorite")
+	beego.Router("/api/favorites", &controllers.FavoritesController{}, "get:GetFavorites")
 }
