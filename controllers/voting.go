@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"bytes"
+	// "bytes"
 
 	"github.com/beego/beego/v2/server/web"
 )
