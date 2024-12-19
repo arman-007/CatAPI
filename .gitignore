@@ -1,0 +1,48 @@
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Build directories
+/bin/
+/obj/
+/pkg/
+
+# Beego generated files
+logs/
+upload/
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*.log
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Environment and config files
+.env
+app.conf
+
+# Dependency directories
+vendor/
+
+# Node.js if using any frontend tooling
+node_modules/
+*.cache/
+
+# Private keys and secrets
+*.key
+*.pem
+*.crt
+
+# Other
+*_test.go
+
+CatAPI

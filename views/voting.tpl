@@ -15,14 +15,15 @@
             border-radius: 8px;
             overflow: hidden;
             display: inline-block;
-            width: 300px;
+            width: 800px;
+            height: 600px;
             text-align: center;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             margin: auto;
         }
         .cat-card img {
             width: 100%;
-            height: auto;
+            height: 90%;
         }
         .button-container {
             display: flex;
@@ -67,36 +68,97 @@
 
     <script>
         // Function to handle voting
-        function vote(voteType) {
-            // Fetch the next cat image
-            fetchNextCat();
+        async function vote(voteType) {
+            const catImage = document.getElementById("cat-image");
+            const imageId = catImage.src.split('/').pop().split('.')[0]; // Extract image ID from URL
+
+            const payload = {
+                image_id: imageId,               // The ID of the cat image
+                sub_id: localStorage.getItem("sub_id") || `demo-${Math.random().toString(36).substr(2, 9)}`, // Generate or use stored sub_id
+                value: voteType === "up"         // true for upvote, false for downvote
+            };
+
+            try {
+                const response = await fetch("https://api.thecatapi.com/v1/votes", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-api-key": "DEMO-API-KEY" // Use the provided API key
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (response.ok) {
+                    console.log("Vote registered successfully with The Cat API.");
+                    fetchNextCat(); // Load the next cat image
+                } else {
+                    const errorText = await response.text();
+                    console.error("Failed to register vote with The Cat API:", errorText);
+                }
+            } catch (error) {
+                console.error("Error sending vote to The Cat API:", error);
+            }
         }
 
         // Function to handle favorite action
-        function favorite() {
-            console.log("Cat added to favorites!");
+        async function favorite() {
+            const catImage = document.getElementById("cat-image");
+            const imageId = catImage.src.split('/').pop().split('.')[0]; // Extract image ID from URL
+
+            const payload = {
+                image_id: imageId, // ID of the currently displayed cat image
+                sub_id: localStorage.getItem("sub_id") || `demo-${Math.random().toString(36).substr(2, 9)}` // Unique user/session identifier
+            };
+
+            try {
+                const response = await fetch("https://api.thecatapi.com/v1/favourites", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-api-key": "DEMO-API-KEY" // Replace with your actual API key
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log("Image favorited successfully:", data);
+                    fetchNextCat();
+                } else {
+                    const errorText = await response.text();
+                    console.error("Failed to favorite image:", errorText);
+                    alert("Failed to favorite the image. Please try again.");
+                }
+            } catch (error) {
+                console.error("Error favoriting image:", error);
+                alert("An error occurred while trying to favorite the image.");
+            }
         }
 
         // Function to fetch the next cat image
         async function fetchNextCat() {
             try {
-                const response = await fetch('/voting'); // Call backend API to get the next image
-                if (response.ok) {
-                    const html = await response.text();
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, "text/html");
+                const response = await fetch("https://api.thecatapi.com/v1/images/search?limit=1", {
+                    headers: {
+                        "x-api-key": "DEMO-API-KEY" // Use the same API key
+                    }
+                });
 
-                    // Replace the cat card content
-                    const newCatCard = doc.getElementById("cat-card");
-                    const oldCatCard = document.getElementById("cat-card");
-                    oldCatCard.innerHTML = newCatCard.innerHTML;
+                if (response.ok) {
+                    const data = await response.json();
+                    const newImageUrl = data[0].url;
+
+                    // Update the cat image in the DOM
+                    const catImage = document.getElementById("cat-image");
+                    catImage.src = newImageUrl;
                 } else {
-                    console.error("Failed to fetch next cat image.");
+                    console.error("Failed to fetch the next cat image.");
                 }
             } catch (error) {
-                console.error("Error fetching next cat:", error);
+                console.error("Error fetching the next cat image:", error);
             }
         }
+
     </script>
 </body>
 </html>
