@@ -24,7 +24,7 @@ func (c *FavoritesController) AddFavorite() {
         c.ServeJSON()
         return
     }
-    fmt.Println("RAW REQUEST BODY:", string(body))
+    // fmt.Println("RAW REQUEST BODY:", string(body))
 
     // Parse the JSON
     var payload map[string]interface{}

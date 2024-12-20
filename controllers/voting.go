@@ -16,7 +16,7 @@ type VotingController struct {
 
 // Fetch a random cat image for voting
 func (c *VotingController) GetCat() {
-	req, err := http.NewRequest("GET", "https://api.thecatapi.com/v1/images/search", nil)
+	req, err := http.NewRequest("GET", "https://api.thecatapi.com/v1/images/search?limit=1&size=med", nil)
 	if err != nil {
 		c.Ctx.Output.SetStatus(500)
 		c.Data["json"] = map[string]string{"error": "Failed to create request"}
@@ -57,7 +57,7 @@ func (c *VotingController) SubmitVote() {
 		c.ServeJSON()
 		return
 	}
-	fmt.Println("RAW REQUEST BODY:", string(body))
+	// fmt.Println("RAW REQUEST BODY:", string(body))
 
 	var payload map[string]interface{}
 	if err := json.Unmarshal(body, &payload); err != nil {
