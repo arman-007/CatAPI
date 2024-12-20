@@ -160,17 +160,14 @@
         <!-- Breeds Section -->
         <section>
             <div id="breeds" class="tab-content">
-                    <select id="breed-selector" class="dropdown margin-bottom" onchange="fetchBreedImages()">
+                    <select id="breed-selector" class="dropdown" onchange="fetchBreedImages()">
                         <!-- Options will be dynamically populated -->
                     </select>
-                    <div class="carousel">
-                        <div id="carousel-container" class="image-wrapper">
-                            <!-- Images will be dynamically populated here -->
-                        </div>
-                        <div id="dot-navigation" class="dot-navigation">
-                            <!-- Navigation dots will be dynamically populated here -->
-                        </div>
+                <div class="carousel" id="carousel-container">
+                    <div class="image-wrapper">
+                        <!-- put the image under image wrapper  -->
                     </div>
+                </div>
                 <div id="breed-info"></div>
             </div>
         </section>
