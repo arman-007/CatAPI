@@ -1,4 +1,16 @@
-// Initialize
+const originalFetch = window.fetch;
+
+window.fetch = async function(url, options) {
+    if (!url || url === "undefined") {
+        console.error("Attempted to fetch an undefined URL");
+        return Promise.reject(new Error("Undefined URL in fetch"));
+    }
+    return originalFetch.apply(this, arguments);
+};
+
+
+
+// Initialize sub_id if not already set
 if (!localStorage.getItem("sub_id")) {
     const subId = `demo-${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem("sub_id", subId);
@@ -6,36 +18,47 @@ if (!localStorage.getItem("sub_id")) {
 
 // Manage Tabs
 function showTab(tab) {
-    const tabs = document.querySelectorAll('.tab-content');
-    const buttons = document.querySelectorAll('.tabs button');
+    const tabs = document.querySelectorAll(".tab-content");
+    const buttons = document.querySelectorAll(".nav button");
 
-    tabs.forEach(t => t.classList.remove('active'));
-    buttons.forEach(b => b.classList.remove('active'));
+    // Update active tab
+    tabs.forEach(t => t.classList.remove("active"));
+    buttons.forEach(b => b.classList.remove("active"));
 
-    document.getElementById(tab).classList.add('active');
-    document.getElementById(`tab-${tab}`).classList.add('active');
+    document.getElementById(tab).classList.add("active");
+    document.getElementById(`tab-${tab}`).classList.add("active");
 
-    // Load content for the selected tab
-    if (tab === 'voting') {
-        fetchCatForVoting();
-    } else if (tab === 'breeds') {
-        fetchBreedList();
-    } else if (tab === 'favs') {
-        fetchFavorites();
+    // Pause auto-slide if not in the breeds tab
+    if (tab !== "breeds") clearInterval(autoSlideInterval);
+    else startAutoSlide();
+}
+
+// Voting Tab
+function renderVotingTab(data) {
+    const catImage = document.getElementById("cat-image");
+
+    // Log the received data
+    console.log("Data received in renderVotingTab:", data);
+
+    // Parse JSON if data is a string
+    if (typeof data === "string") {
+        try {
+            data = JSON.parse(data);
+        } catch (error) {
+            console.error("Failed to parse JSON string:", data);
+            return;
+        }
+    }
+
+    // Check if valid data is available
+    if (Array.isArray(data) && data.length > 0 && data[0].url) {
+        catImage.src = data[0].url; // Use the first object's `url`
+    } else {
+        console.error("Voting data is not available or invalid format:", data);
+        catImage.src = "placeholder.png"; // Path to a default placeholder image
     }
 }
 
-// Voting Logic
-async function fetchCatForVoting() {
-    try {
-        const response = await fetch("/api/voting/cat");
-        const data = await response.json();
-        const catImage = document.getElementById("cat-image");
-        catImage.src = data[0].url;
-    } catch (error) {
-        console.error("Error fetching cat for voting:", error);
-    }
-}
 
 async function vote(type) {
     const subId = localStorage.getItem("sub_id");
@@ -52,7 +75,7 @@ async function vote(type) {
         });
         if (response.ok) {
             console.log("Vote registered!");
-            fetchCatForVoting(); // Fetch next cat
+            renderVotingTab(preloadedData.voting); // Render the next preloaded data
         }
     } catch (error) {
         console.error("Error voting:", error);
@@ -80,58 +103,69 @@ async function favorite() {
     }
 }
 
-// Breeds Logic
-async function fetchBreedList() {
+function renderBreedsTab(data) {
     const breedSelector = document.getElementById("breed-selector");
-    if (breedSelector.options.length > 0) return; // Prevent duplicate fetching
 
-    try {
-        const response = await fetch("/api/breeds");
-        const data = await response.json();
+    // Parse JSON if data is a string
+    if (typeof data === "string") {
+        try {
+            data = JSON.parse(data);
+        } catch (error) {
+            console.error("Failed to parse JSON string:", data);
+            return;
+        }
+    }
 
-        breedSelector.innerHTML = data.map(breed => `<option value="${breed.id}">${breed.name}</option>`).join("");
-        fetchBreedImages();
-    } catch (error) {
-        console.error("Error fetching breeds:", error);
+    // Ensure `data` is an array
+    if (!Array.isArray(data)) {
+        console.error("Breeds data is not an array:", data);
+        breedSelector.innerHTML = `<option value="">No breeds available</option>`;
+        return;
+    }
+
+    // Populate the dropdown with breed options
+    breedSelector.innerHTML = data
+        .map(breed => `<option value="${breed.id}">${breed.name}</option>`)
+        .join("");
+
+    // Automatically render the first breed's images and info
+    if (data.length > 0) {
+        renderBreedImagesAndInfo(data[0]);
     }
 }
 
-async function fetchBreedImages() {
-    const breedSelector = document.getElementById("breed-selector");
-    const breedId = breedSelector.value;
+function renderBreedImagesAndInfo(breed) {
+    const carouselContainer = document.getElementById("carousel-container");
+    const dotNavigation = document.getElementById("dot-navigation");
 
-    try {
-        const response = await fetch(`/api/breeds/images?breed_id=${breedId}`);
-        const images = await response.json();
-
+    const images = breed.images || [];
+    if (images.length > 0) {
         // Populate the carousel with images
-        const carouselContainer = document.getElementById("carousel-container");
-        carouselContainer.innerHTML = images
-            .map(img => `<img src="${img.url}" alt="Cat Image">`)
-            .join("");
+        carouselContainer.innerHTML = images.map(img => `<img src="${img.url}" alt="Cat Image">`).join("");
 
         // Populate dot navigation
-        const dotNavigation = document.getElementById("dot-navigation");
-        dotNavigation.innerHTML = images
-            .map((_, index) => `<span class="dot" onclick="navigateCarousel(${index})"></span>`)
-            .join("");
+        dotNavigation.innerHTML = images.map((_, index) => `<span class="dot" onclick="navigateCarousel(${index})"></span>`).join("");
 
         // Set the first image and first dot as active
         updateCarousel(0);
-
-        // Populate breed info
-        const breed = images[0].breeds[0];
-        const breedInfo = document.getElementById("breed-info");
-        breedInfo.innerHTML = `
-            <h2>${breed.name}</h2>
-            <p><strong>Origin:</strong> ${breed.origin}</p>
-            <p><strong>Description:</strong> ${breed.description}</p>
-        `;
-    } catch (error) {
-        console.error("Error fetching breed images:", error);
     }
+
+    // Populate breed info
+    const breedInfo = document.getElementById("breed-info");
+    breedInfo.innerHTML = `
+        <h2>${breed.name}</h2>
+        <p><strong>Origin:</strong> ${breed.origin}</p>
+        <p><strong>Description:</strong> ${breed.description}</p>
+    `;
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+    const preloadedBreeds = window.preloadedData.breeds;
+    renderBreedsTab(preloadedBreeds);
+});
+
+
+// Carousel Logic
 let currentSlide = 0;
 
 function updateCarousel(index) {
@@ -143,7 +177,7 @@ function updateCarousel(index) {
 
     // Update the active dot
     dots.forEach(dot => dot.classList.remove("active"));
-    dots[index].classList.add("active");
+    if (dots[index]) dots[index].classList.add("active");
 
     currentSlide = index;
 }
@@ -163,24 +197,40 @@ function startAutoSlide() {
     }, 3000); // Change slide every 3 seconds
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    startAutoSlide();
-});
-
-
-
-// Favorites Logic
-async function fetchFavorites() {
-    const subId = localStorage.getItem("sub_id");
+// Favorites Tab
+function renderFavoritesTab(data) {
     const gallery = document.getElementById("favorites-gallery");
 
-    try {
-        const response = await fetch(`/api/favorites?sub_id=${subId}`);
-        const data = await response.json();
-        gallery.innerHTML = data.map(fav => `<img src="${fav.image.url}" alt="Favorite Cat">`).join("");
-    } catch (error) {
-        console.error("Error fetching favorites:", error);
+    // Parse JSON if data is a string
+    if (typeof data === "string") {
+        try {
+            data = JSON.parse(data);
+        } catch (error) {
+            console.error("Failed to parse JSON string:", data);
+            return;
+        }
     }
+
+    // Validate that data is an array
+    if (!Array.isArray(data)) {
+        console.error("Expected an array for favorites but got:", data);
+        gallery.innerHTML = `<p>No favorites available</p>`;
+        return;
+    }
+
+    // Populate the gallery with favorite images
+    gallery.innerHTML = data
+        .map(fav => {
+            const url = fav?.image?.url || "placeholder.jpg"; // Fallback to placeholder if URL is missing
+            return `<img src="${url}" alt="Favorite Cat">`;
+        })
+        .join("");
 }
 
-document.addEventListener("DOMContentLoaded", fetchCatForVoting);
+
+// Load preloaded data
+document.addEventListener("DOMContentLoaded", () => {
+    renderVotingTab(preloadedData.voting);
+    renderBreedsTab(preloadedData.breeds);
+    renderFavoritesTab(preloadedData.favorites);
+});
