@@ -138,7 +138,10 @@ function renderBreedImagesAndInfo(breed) {
     const carouselContainer = document.getElementById("carousel-container");
     const dotNavigation = document.getElementById("dot-navigation");
 
-    const images = breed.images || [];
+    // Handle single image or an array of images
+    console.log(breed)
+    const images = Array.isArray(breed.images) ? breed.images : [breed.image];
+
     if (images.length > 0) {
         // Populate the carousel with images
         carouselContainer.innerHTML = images.map(img => `<img src="${img.url}" alt="Cat Image">`).join("");
@@ -148,6 +151,8 @@ function renderBreedImagesAndInfo(breed) {
 
         // Set the first image and first dot as active
         updateCarousel(0);
+    } else {
+        console.error("No images available for the selected breed.");
     }
 
     // Populate breed info
@@ -156,13 +161,22 @@ function renderBreedImagesAndInfo(breed) {
         <h2>${breed.name}</h2>
         <p><strong>Origin:</strong> ${breed.origin}</p>
         <p><strong>Description:</strong> ${breed.description}</p>
+        <p><strong>Wikipedia URL:</strong> <a href="${breed.wikipedia_url}" target="_blank">${breed.wikipedia_url}</a></p>
     `;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    const preloadedBreeds = window.preloadedData.breeds;
-    renderBreedsTab(preloadedBreeds);
-});
+async function fetchBreedImages(breedId) {
+    console.log(breedId)
+    try {
+        const response = await fetch(`/api/breeds/images?breed_id=${breedId}`);
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error("Invalid data format");
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch breed images:", error);
+        return [];
+    }
+}
 
 
 // Carousel Logic
@@ -172,14 +186,43 @@ function updateCarousel(index) {
     const carouselContainer = document.getElementById("carousel-container");
     const dots = document.querySelectorAll(".dot");
 
+    // Ensure there are dots
+    if (!dots.length) {
+        console.error("No dots found in the DOM.");
+        return;
+    }
+
+    // Ensure index is within bounds
+    if (index < 0 || index >= dots.length) {
+        console.error("Invalid carousel index:", index);
+        return;
+    }
+
     // Update the slide position
-    carouselContainer.style.transform = `translateX(-${index * 100}%)`;
-
-    // Update the active dot
-    dots.forEach(dot => dot.classList.remove("active"));
-    if (dots[index]) dots[index].classList.add("active");
-
     currentSlide = index;
+    const slideWidth = 100; // Assuming slides are 100% of the container width
+    carouselContainer.style.transform = `translateX(-${index * slideWidth}%)`;
+
+    // Update dot active state
+    dots.forEach(dot => dot.classList.remove("active"));
+    dots[index].classList.add("active");
+}
+
+
+function updateBreedCarousel(images) {
+    const carouselContainer = document.getElementById("carousel-container");
+    const dotNavigation = document.getElementById("dot-navigation");
+
+    // Populate carousel and dots
+    carouselContainer.innerHTML = images.map(img => `<img src="${img.url}" alt="Cat Image">`).join("");
+    dotNavigation.innerHTML = images.map((_, index) => `<span class="dot" onclick="navigateCarousel(${index})"></span>`).join("");
+
+    // Activate the first slide if dots are available
+    if (images.length > 0) {
+        updateCarousel(0);
+    } else {
+        console.error("No images available to populate carousel.");
+    }
 }
 
 function navigateCarousel(index) {
@@ -196,6 +239,7 @@ function startAutoSlide() {
         updateCarousel(nextSlide);
     }, 3000); // Change slide every 3 seconds
 }
+
 
 // Favorites Tab
 function renderFavoritesTab(data) {
@@ -233,4 +277,29 @@ document.addEventListener("DOMContentLoaded", () => {
     renderVotingTab(preloadedData.voting);
     renderBreedsTab(preloadedData.breeds);
     renderFavoritesTab(preloadedData.favorites);
+});
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const preloadedBreeds = (window.preloadedData && window.preloadedData.breeds) || [];
+    if (preloadedBreeds.length === 0) {
+        console.error("No breeds data available.");
+        return;
+    }
+
+    renderBreedsTab(preloadedBreeds);
+
+    const breedSelector = document.getElementById("breed-selector");
+    breedSelector.addEventListener("change", async () => {
+        const breedId = breedSelector.value;
+        if (breedId) {
+            const images = await fetchBreedImages(breedId);
+            updateBreedCarousel(images); // Ensures dots are populated
+        }
+    });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    startAutoSlide(); // Start automatic sliding
 });

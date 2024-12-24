@@ -186,20 +186,12 @@
 
     <script src="/static/js/script.js"></script>
     <script>
-    const preloadedData = {
-        voting: {{ .Voting | json }},
-        breeds: {{ .Breeds | json }},
-        favorites: {{ .Favorites | json }}
-    };
-
-    // Use preloadedData in your JavaScript
-    document.addEventListener("DOMContentLoaded", () => {
-        // Initialize tabs with preloaded data
-        renderVotingTab(preloadedData.voting);
-        renderBreedsTab(preloadedData.breeds);
-        renderFavoritesTab(preloadedData.favorites);
-    });
-</script>
+        window.preloadedData = {
+            breeds: {{ .Breeds | json }},
+            voting: {{ .Voting | json }},
+            favorites: {{ .Favorites | json }}
+        };
+    </script>
 </body>
 
 </html>

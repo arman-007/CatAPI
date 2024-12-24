@@ -28,7 +28,7 @@ func (c *FavoritesController) AddFavorite() {
 
     // Parse the JSON
     var payload map[string]interface{}
-    fmt.Println(payload)
+    // fmt.Println(payload)
     if err := json.Unmarshal(body, &payload); err != nil {
         c.Ctx.Output.SetStatus(400)
         fmt.Println("ERROR: Failed to parse JSON:", err)

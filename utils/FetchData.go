@@ -13,10 +13,17 @@ type APIResponse struct {
 	Error error
 }
 
-func FetchData(url, key string, ch chan<- APIResponse) {
+func FetchData(url, key string, ch chan<- APIResponse, queryParams map[string]string) {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("x-api-key", "live_GQGS0iyuOQPXMeMpC7aTQle8rd1Go6WB3rmtDNBNxSg3xeK1INujU9tRhtZdH8v3")
-	req.Header.Set("Accept", "application/json")
+
+	// Add query parameters
+	q := req.URL.Query()
+	for k, v := range queryParams {
+		q.Add(k, v)
+	}
+	req.URL.RawQuery = q.Encode()
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		ch <- APIResponse{Key: key, Error: err}
