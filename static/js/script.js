@@ -166,12 +166,14 @@ function renderBreedImagesAndInfo(breed) {
 }
 
 async function fetchBreedImages(breedId) {
-    console.log(breedId)
+    // console.log(breedId)
     try {
-        const response = await fetch(`/api/breeds/images?breed_id=${breedId}`);
-        const data = await response.json();
-        if (!Array.isArray(data)) throw new Error("Invalid data format");
-        return data;
+        if (breedId){
+            const response = await fetch(`/api/breeds/images?breed_id=${breedId}`);
+            const data = await response.json();
+            if (!Array.isArray(data)) throw new Error("Invalid data format");
+            return data;
+        }
     } catch (error) {
         console.error("Failed to fetch breed images:", error);
         return [];
@@ -185,44 +187,59 @@ let currentSlide = 0;
 function updateCarousel(index) {
     const carouselContainer = document.getElementById("carousel-container");
     const dots = document.querySelectorAll(".dot");
+    const images = carouselContainer.querySelectorAll("img");
 
-    // Ensure there are dots
-    if (!dots.length) {
-        console.error("No dots found in the DOM.");
+    if (!images.length) {
+        console.error("No images found in the carousel.");
         return;
     }
 
     // Ensure index is within bounds
-    if (index < 0 || index >= dots.length) {
+    if (index < 0 || index >= images.length) {
         console.error("Invalid carousel index:", index);
         return;
     }
 
-    // Update the slide position
     currentSlide = index;
-    const slideWidth = 100; // Assuming slides are 100% of the container width
-    carouselContainer.style.transform = `translateX(-${index * slideWidth}%)`;
 
-    // Update dot active state
+    // Set a consistent slide width
+    const slideWidth = images[0].getBoundingClientRect().width;
+
+    // Apply transform to shift the container
+    carouselContainer.style.transform = `translateX(-${index * slideWidth}px)`;
+    carouselContainer.style.transition = "transform 0.5s ease-in-out";
+
+    // Update active dots
     dots.forEach(dot => dot.classList.remove("active"));
-    dots[index].classList.add("active");
+    if (dots[index]) {
+        dots[index].classList.add("active");
+    }
 }
+
 
 
 function updateBreedCarousel(images) {
     const carouselContainer = document.getElementById("carousel-container");
     const dotNavigation = document.getElementById("dot-navigation");
 
-    // Populate carousel and dots
-    carouselContainer.innerHTML = images.map(img => `<img src="${img.url}" alt="Cat Image">`).join("");
-    dotNavigation.innerHTML = images.map((_, index) => `<span class="dot" onclick="navigateCarousel(${index})"></span>`).join("");
-
-    // Activate the first slide if dots are available
-    if (images.length > 0) {
-        updateCarousel(0);
-    } else {
-        console.error("No images available to populate carousel.");
+    // Ensure valid images
+    if (!images.length) {
+        console.error("No images available for the carousel.");
+        return;
     }
+
+    // Populate the carousel with images
+    carouselContainer.innerHTML = images
+        .map(img => `<img src="${img.url}" alt="Cat Image" class="object-cover w-full h-64 rounded-md">`)
+        .join("");
+
+    // Populate dots for navigation
+    dotNavigation.innerHTML = images
+        .map((_, index) => `<span class="dot cursor-pointer" onclick="navigateCarousel(${index})"></span>`)
+        .join("");
+
+    // Activate the first slide and dot
+    updateCarousel(0);
 }
 
 function navigateCarousel(index) {
@@ -237,8 +254,18 @@ function startAutoSlide() {
         const dots = document.querySelectorAll(".dot");
         const nextSlide = (currentSlide + 1) % dots.length;
         updateCarousel(nextSlide);
-    }, 3000); // Change slide every 3 seconds
+    }, 3000);
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    const initialImages = document.querySelectorAll("#carousel-container img");
+    if (initialImages.length > 0) {
+        updateCarousel(0); // Initialize the first slide
+        startAutoSlide();
+    } else {
+        console.error("No initial images to display in the carousel.");
+    }
+});
 
 
 // Favorites Tab
@@ -294,12 +321,9 @@ document.addEventListener("DOMContentLoaded", () => {
     breedSelector.addEventListener("change", async () => {
         const breedId = breedSelector.value;
         if (breedId) {
+            // console.log("fetching breed images for ", breedId)
             const images = await fetchBreedImages(breedId);
             updateBreedCarousel(images); // Ensures dots are populated
         }
     });
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-    startAutoSlide(); // Start automatic sliding
 });
