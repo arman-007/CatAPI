@@ -15,7 +15,7 @@ type FavoritesController struct {
 }
 
 func (c *FavoritesController) AddFavorite() {
-    // Log the raw request body
+    // Read the raw request body
     body, err := io.ReadAll(c.Ctx.Request.Body)
     if err != nil {
         c.Ctx.Output.SetStatus(500)
@@ -24,11 +24,9 @@ func (c *FavoritesController) AddFavorite() {
         c.ServeJSON()
         return
     }
-    // fmt.Println("RAW REQUEST BODY:", string(body))
 
-    // Parse the JSON
+    // Parse the JSON from the request
     var payload map[string]interface{}
-    // fmt.Println(payload)
     if err := json.Unmarshal(body, &payload); err != nil {
         c.Ctx.Output.SetStatus(400)
         fmt.Println("ERROR: Failed to parse JSON:", err)
@@ -37,14 +35,29 @@ func (c *FavoritesController) AddFavorite() {
         return
     }
 
-    // Log the parsed payload
-    // fmt.Println("PARSED PAYLOAD:", payload)
+    // Log the parsed payload for debugging
+    fmt.Println("PARSED PAYLOAD:", payload)
 
-    // Proceed with the rest of your logic (e.g., forwarding to The Cat API)
-    c.Data["json"] = map[string]string{"message": "Payload received successfully"}
-    c.ServeJSON()
+    // Check for required fields
+    imageID, ok := payload["image_id"].(string)
+    if !ok || imageID == "" {
+        c.Ctx.Output.SetStatus(400)
+        c.Data["json"] = map[string]string{"error": "image_id is required"}
+        c.ServeJSON()
+        return
+    }
 
-    reqBody, err := json.Marshal(payload)
+    subID, _ := payload["sub_id"].(string) // sub_id is optional
+
+    // Prepare the payload for The Cat API
+    catAPIPayload := map[string]string{
+        "image_id": imageID,
+    }
+    if subID != "" {
+        catAPIPayload["sub_id"] = subID
+    }
+
+    reqBody, err := json.Marshal(catAPIPayload)
     if err != nil {
         c.Ctx.Output.SetStatus(500)
         c.Data["json"] = map[string]string{"error": "Failed to marshal payload"}
@@ -52,6 +65,7 @@ func (c *FavoritesController) AddFavorite() {
         return
     }
 
+    // Make the request to The Cat API
     req, err := http.NewRequest("POST", "https://api.thecatapi.com/v1/favourites", bytes.NewReader(reqBody))
     if err != nil {
         c.Ctx.Output.SetStatus(500)
@@ -72,7 +86,8 @@ func (c *FavoritesController) AddFavorite() {
     }
     defer resp.Body.Close()
 
-    // body, err := io.ReadAll(resp.Body)
+    // Forward the response from The Cat API back to the client
+    respBody, err := io.ReadAll(resp.Body)
     if err != nil {
         c.Ctx.Output.SetStatus(500)
         c.Data["json"] = map[string]string{"error": "Failed to read response"}
@@ -81,7 +96,7 @@ func (c *FavoritesController) AddFavorite() {
     }
 
     c.Ctx.Output.SetStatus(resp.StatusCode)
-    c.Ctx.Output.Body(body)
+    c.Ctx.Output.Body(respBody)
 }
 
 // Fetch user's favorites

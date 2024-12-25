@@ -382,7 +382,7 @@ h1 {
 
 /* Dropdown styling */
 .dropdown {
-    width: 90%;
+    width: 100%;
     padding: 8px;
     font-size: 16px;
     color: #333;
@@ -414,6 +414,7 @@ h1 {
 
 .carousel {
     display: flex; /* Ensures images align horizontally */
+    flex-direction: column;
     overflow: hidden; /* Hides overflowing images */
 }
 

@@ -160,7 +160,7 @@
                 <select id="breed-selector" class="dropdown margin-bottom" onchange="fetchBreedImages()">
                     <!-- Options will be dynamically populated -->
                 </select>
-                <div class="carousel">
+                <div class="carousel flex">
                     <div id="carousel-container" class="image-wrapper">
                         <!-- Images will be dynamically populated here -->
                     </div>
@@ -183,8 +183,8 @@
     <script src="/static/js/script.js"></script>
     <script>
         window.preloadedData = {
-            breeds: {{ .Breeds | json }},
             voting: {{ .Voting | json }},
+            breeds: {{ .Breeds | json }},
             favorites: {{ .Favorites | json }}
         };
     </script>

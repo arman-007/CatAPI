@@ -63,6 +63,7 @@ func (c *BreedsController) GetBreedImages() {
 		return
 	}
 	req.Header.Set("x-api-key", "DEMO-API-KEY")
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
