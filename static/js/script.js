@@ -21,16 +21,20 @@ function showTab(tab) {
     const tabs = document.querySelectorAll(".tab-content");
     const buttons = document.querySelectorAll(".nav button");
 
-    // Update active tab
-    tabs.forEach(t => t.classList.remove("active"));
+    // Hide all tabs and deactivate all buttons
+    tabs.forEach(t => t.classList.add("hidden"));
     buttons.forEach(b => b.classList.remove("active"));
 
-    document.getElementById(tab).classList.add("active");
+    // Show the selected tab and activate its button
+    document.getElementById(tab).classList.remove("hidden");
     document.getElementById(`tab-${tab}`).classList.add("active");
 
-    // Pause auto-slide if not in the breeds tab
-    if (tab !== "breeds") clearInterval(autoSlideInterval);
-    else startAutoSlide();
+    // Manage auto-slide for breeds
+    if (tab !== "breeds") {
+        clearInterval(autoSlideInterval);
+    } else {
+        startAutoSlide();
+    }
 }
 
 // Voting Tab
@@ -194,7 +198,6 @@ function updateCarousel(index) {
         return;
     }
 
-    // Ensure index is within bounds
     if (index < 0 || index >= images.length) {
         console.error("Invalid carousel index:", index);
         return;
@@ -202,19 +205,16 @@ function updateCarousel(index) {
 
     currentSlide = index;
 
-    // Set a consistent slide width
     const slideWidth = images[0].getBoundingClientRect().width;
-
-    // Apply transform to shift the container
     carouselContainer.style.transform = `translateX(-${index * slideWidth}px)`;
     carouselContainer.style.transition = "transform 0.5s ease-in-out";
 
-    // Update active dots
     dots.forEach(dot => dot.classList.remove("active"));
     if (dots[index]) {
         dots[index].classList.add("active");
     }
 }
+
 
 
 
@@ -301,10 +301,15 @@ function renderFavoritesTab(data) {
 
 // Load preloaded data
 document.addEventListener("DOMContentLoaded", () => {
+    // Show the default tab
+    showTab("voting");
+
+    // Render preloaded data
     renderVotingTab(preloadedData.voting);
     renderBreedsTab(preloadedData.breeds);
     renderFavoritesTab(preloadedData.favorites);
 });
+
 
 
 
