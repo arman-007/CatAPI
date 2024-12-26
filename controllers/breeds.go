@@ -1,46 +1,15 @@
 package controllers
 
 import (
-	// "encoding/json"
 	"io"
 	"net/http"
-	"CatAPI/utils"
 
 	beego "github.com/beego/beego/v2/server/web"
 )
 
 type BreedsController struct {
 	beego.Controller
-}
-
-// Fetch the list of breeds
-func (c *BreedsController) GetBreedsAndImages() {
-	ch := make(chan utils.APIResponse, 2)
-
-	// Fetch breed list
-	go utils.FetchData("https://api.thecatapi.com/v1/breeds", "breeds", ch, nil)
-
-	// Fetch images for a specific breed (for example, "abys")
-	go utils.FetchData("https://api.thecatapi.com/v1/images/search", "breed_images", ch, map[string]string{
-		"breed_id": "abys", // Replace with the actual breed ID
-		"limit":    "8",
-		"size":     "med",
-	})
-
-	// Collect results
-	responseMap := make(map[string]interface{})
-	for i := 0; i < 2; i++ {
-		res := <-ch
-		if res.Error != nil {
-			responseMap[res.Key] = map[string]string{"error": res.Error.Error()}
-		} else {
-			responseMap[res.Key] = res.Data
-		}
-	}
-
-	// Serve JSON response
-	c.Data["json"] = responseMap
-	c.ServeJSON()
+	Client HTTPClient
 }
 
 
@@ -62,10 +31,17 @@ func (c *BreedsController) GetBreedImages() {
 		c.ServeJSON()
 		return
 	}
-	req.Header.Set("x-api-key", "DEMO-API-KEY")
+
+	apiKey := beego.AppConfig.DefaultString("X-API-KEY", "DEMO-API-KEY")
+	req.Header.Set("x-api-key", apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := c.Client
+    if client == nil {
+        client = &http.Client{}
+    }
+
+	// client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		c.Ctx.Output.SetStatus(500)

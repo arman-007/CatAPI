@@ -5,6 +5,8 @@ import (
 	// "fmt"
 	"io"
 	"net/http"
+
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 type APIResponse struct {
@@ -15,7 +17,9 @@ type APIResponse struct {
 
 func FetchData(url, key string, ch chan<- APIResponse, queryParams map[string]string) {
 	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Set("x-api-key", "live_GQGS0iyuOQPXMeMpC7aTQle8rd1Go6WB3rmtDNBNxSg3xeK1INujU9tRhtZdH8v3")
+
+	apiKey := beego.AppConfig.DefaultString("X-API-KEY", "DEMO-API-KEY")
+	req.Header.Set("x-api-key", apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	
 	// Add query parameters
