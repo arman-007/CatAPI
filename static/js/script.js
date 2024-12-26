@@ -161,7 +161,7 @@ async function renderBreedImagesAndInfo(breed) {
         // Populate the carousel with images
         if (images.length > 0) {
             carouselContainer.innerHTML = images
-                .map(img => `<img src="${img.url}" alt="Cat Image">`)
+                .map(img => `<img src="${img.url}" alt="Cat Image" class="carousel-cat-image">`)
                 .join("");
 
             // Populate dot navigation
@@ -233,10 +233,10 @@ function updateCarousel(index) {
     currentSlide = index;
 
     //here are the issues i guess
-    const slideWidth = images[0].getBoundingClientRect().width;
-    console.log(slideWidth)
-    carouselContainer.style.transform = `translateX(-${index * slideWidth}px)`;
-    carouselContainer.style.transition = "transform 0.5s ease-in-out";
+    // Show the current image and hide the others
+    images.forEach((img, imgIndex) => {
+        img.style.display = imgIndex === index ? "block" : "none";
+    });
 
     dots.forEach(dot => dot.classList.remove("active"));
     if (dots[index]) {
@@ -245,7 +245,7 @@ function updateCarousel(index) {
 }
 
 //checked ; images are being pulled correctly
-function updateBreedCarousel(images) {
+async function updateBreedCarousel(images) {
     const carouselContainer = document.getElementById("carousel-container");
     const dotNavigation = document.getElementById("dot-navigation");
 
@@ -257,7 +257,7 @@ function updateBreedCarousel(images) {
 
     // Populate the carousel with images
     carouselContainer.innerHTML = images
-        .map(img => `<img src="${img.url}" alt="Cat Image">`)
+        .map(img => `<img src="${img.url}" alt="Cat Image" class="carousel-cat-image">`)
         .join("");
 
     // Populate dots for navigation
@@ -286,15 +286,39 @@ function startAutoSlide() {
     }, 3000);
 }
 
-// document.addEventListener("DOMContentLoaded", () => {
-//     const initialImages = document.querySelectorAll("#carousel-container img");
-//     if (initialImages.length > 0) {
-//         updateCarousel(0); // Initialize the first slide
-//         startAutoSlide();
-//     } else {
-//         console.error("No initial images to display in the carousel.");
-//     }
-// });
+//checked
+function updateBreedInfo(breedId) {
+    // Parse JSON if data is a string
+    if (typeof preloadedBreeds === "string") {
+        try {
+            preloadedBreeds = JSON.parse(preloadedBreeds);
+        } catch (error) {
+            console.error("Failed to parse JSON string:", preloadedBreeds);
+            return;
+        }
+    }
+
+    if (!Array.isArray(preloadedBreeds)) {
+        console.error("preloadedBreeds is not an array:", preloadedBreeds);
+        return;
+    }
+    
+    const selectedBreed = preloadedBreeds.find(breed => breed.id === breedId);
+
+    if (!selectedBreed) {
+        console.error(`Breed with ID "${breedId}" not found.`);
+        return;
+    }
+
+    // Populate breed info
+    const breedInfo = document.getElementById("breed-info");
+    breedInfo.innerHTML = `
+        <h2>${selectedBreed.name}</h2>
+        <p><strong>Origin:</strong> ${selectedBreed.origin}</p>
+        <p><strong>Description:</strong> ${selectedBreed.description}</p>
+        <p><strong>Wikipedia URL:</strong> <a href="${selectedBreed.wikipedia_url}" target="_blank">${selectedBreed.wikipedia_url}</a></p>
+    `;
+}
 
 // Favorites Tab
 function renderFavoritesTab(data) {
@@ -320,7 +344,7 @@ function renderFavoritesTab(data) {
     // Populate the gallery with favorite images
     gallery.innerHTML = data
         .map(fav => {
-            const url = fav?.image?.url || "placeholder.jpg"; // Fallback to placeholder if URL is missing
+            const url = fav?.image?.url || "https://placehold.co/400"; // Fallback to placeholder if URL is missing
             return `<img src="${url}" alt="Favorite Cat">`;
         })
         .join("");
@@ -337,8 +361,10 @@ document.addEventListener("DOMContentLoaded", () => {
     renderFavoritesTab(preloadedData.favorites);
 });
 
+let preloadedBreeds = []; // Declare globally to ensure accessibility
+
 document.addEventListener("DOMContentLoaded", () => {
-    const preloadedBreeds = (window.preloadedData && window.preloadedData.breeds) || [];
+    preloadedBreeds = (window.preloadedData && window.preloadedData.breeds) || [];
     if (preloadedBreeds.length === 0) {
         console.error("No breeds data available.");
         return;
@@ -354,6 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const images = await fetchBreedImages(breedId);
             // console.log("Fetched breed images:", images);
             updateBreedCarousel(images); // Ensures dots are populated
+            updateBreedInfo(breedId);    // Updates the breed info
             startAutoSlide();
         }
     });
