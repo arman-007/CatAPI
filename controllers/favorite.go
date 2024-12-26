@@ -10,8 +10,14 @@ import (
 	beego "github.com/beego/beego/v2/server/web"
 )
 
+
+// type HTTPClient interface {
+//     Do(req *http.Request) (*http.Response, error)
+// }
+
 type FavoritesController struct {
 	beego.Controller
+    Client HTTPClient
 }
 
 func (c *FavoritesController) AddFavorite() {
@@ -73,10 +79,16 @@ func (c *FavoritesController) AddFavorite() {
         c.ServeJSON()
         return
     }
-    req.Header.Set("x-api-key", "live_GQGS0iyuOQPXMeMpC7aTQle8rd1Go6WB3rmtDNBNxSg3xeK1INujU9tRhtZdH8v3")
+    apiKey := beego.AppConfig.DefaultString("X-API-KEY", "DEMO-API-KEY")
+	req.Header.Set("x-api-key", apiKey)
     req.Header.Set("Content-Type", "application/json")
 
-    client := &http.Client{}
+    client := c.Client
+    if client == nil {
+        client = &http.Client{}
+    }
+
+    // client := &http.Client{}
     resp, err := client.Do(req)
     if err != nil {
         c.Ctx.Output.SetStatus(500)
@@ -97,47 +109,4 @@ func (c *FavoritesController) AddFavorite() {
 
     c.Ctx.Output.SetStatus(resp.StatusCode)
     c.Ctx.Output.Body(respBody)
-}
-
-// Fetch user's favorites
-func (c *FavoritesController) GetFavorites() {
-	subID := c.GetString("sub_id")
-    // fmt.Println(subID)
-	if subID == "" {
-		c.Ctx.Output.SetStatus(400)
-		c.Data["json"] = map[string]string{"error": "sub_id is required"}
-		c.ServeJSON()
-		return
-	}
-
-	url := "https://api.thecatapi.com/v1/favourites?limit=20&page=0&order=Desc&sub_id=" + subID
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Data["json"] = map[string]string{"error": "Failed to create request"}
-		c.ServeJSON()
-		return
-	}
-	req.Header.Set("x-api-key", "live_GQGS0iyuOQPXMeMpC7aTQle8rd1Go6WB3rmtDNBNxSg3xeK1INujU9tRhtZdH8v3")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Data["json"] = map[string]string{"error": "Failed to fetch data"}
-		c.ServeJSON()
-		return
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Data["json"] = map[string]string{"error": "Failed to read response"}
-		c.ServeJSON()
-		return
-	}
-
-	c.Ctx.Output.SetStatus(200)
-	c.Ctx.Output.Body(body)
 }
