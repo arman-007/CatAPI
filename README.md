@@ -23,16 +23,46 @@ A Beego-based web application for interacting with TheCatAPI, enabling users to 
 git clone https://github.com/arman-007/CatAPI.git
 cd CatAPI
 ```
+2. **Install Beego**
+```bash
+go get github.com/beego/beego/v2@latest
+```
 
-2. **Install Dependencies** Use `go mod` to install required dependencies:
+3. **Add Environment Variables in** `~/.bashrc`
+- Open your `~/.bashrc` file:
+```bash
+nano ~/.bashrc
+```
+
+- Add the following lines to configure Go and Beego:
+```bash
+# Set Go environment variables
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOPATH/bin
+
+# Optional: Add Beego-specific environment variables
+export BEEGO_ENV=dev  # Set Beego environment (dev, prod, test, etc.)
+```
+
+- Save and close the file.
+
+- Apply the changes:
+```bash
+source ~/.bashrc
+```
+
+4. **Install Dependencies** Use `go mod` to install required dependencies:
 ```bash
 go mod tidy
 ```
 
-3. **Set Up Environment Variables** Create a `app.conf` file in the `conf` folder and configure the following:
+5. **Set Up Environment Variables** Create a `app.conf` file in the `conf` folder and configure the following:
 ```bash
-CAT_API_KEY=your-cat-api-key
-PORT=8080
+appname = CatAPI
+httpport = 8080
+runmode = dev
+
+X-API-KEY = live_GQGS0iyuOQPXMeMpC7aTQle8rd1Go6WB3rmtDNBNxSg3xeK1INujU9tRhtZdH8v3
 ```
 
 ## **Testing**
